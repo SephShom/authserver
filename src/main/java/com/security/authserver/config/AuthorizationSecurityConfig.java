@@ -19,17 +19,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
-import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,6 +34,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.security.authserver.service.AuthClientService;
 
 @Configuration
 @EnableWebSecurity
@@ -48,6 +42,9 @@ public class AuthorizationSecurityConfig {
   
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private AuthClientService authClientService;
 
   @Bean 
 	@Order(1)
@@ -78,14 +75,14 @@ public class AuthorizationSecurityConfig {
 			throws Exception {
 		http
 			.authorizeHttpRequests((authorize) -> authorize
-				.requestMatchers("/auth/**").permitAll()
+				.requestMatchers("/auth/**", "/oclient/**").permitAll()
 				.anyRequest().authenticated()
 			)
 			// Form login handles the redirect to the login page from the
 			// authorization server filter chain
 			.formLogin(Customizer.withDefaults());
 
-		http.csrf(customizer -> customizer.ignoringRequestMatchers("/auth/**"));
+		http.csrf(customizer -> customizer.ignoringRequestMatchers("/auth/**", "/oclient/**"));
 
 		return http.build();
 	}
@@ -102,7 +99,7 @@ public class AuthorizationSecurityConfig {
 
 		return new InMemoryUserDetailsManager(userDetails);
 	}
-	 */
+	 
 
 	@Bean 
 	public RegisteredClientRepository registeredClientRepository() {
@@ -122,6 +119,7 @@ public class AuthorizationSecurityConfig {
 
 		return new InMemoryRegisteredClientRepository(oidcClient);
 	}
+	*/
 
 	@Bean OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer() {
 		return context -> {
