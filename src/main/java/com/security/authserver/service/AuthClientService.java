@@ -31,8 +31,7 @@ public class AuthClientService implements RegisteredClientRepository {
   }
 
   @Override
-  public void save(RegisteredClient registeredClient) {
-    // TODO Auto-generated method stub
+  public void save(RegisteredClient registeredClient) {    
     throw new UnsupportedOperationException("Unimplemented method 'save'");
   }
 
