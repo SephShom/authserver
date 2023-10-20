@@ -22,7 +22,7 @@ public class LoginController {
     public String logoutOK(HttpSecurity http) throws Exception {      
         http.logout(logoutConfigurer -> {
           logoutConfigurer
-          .logoutSuccessUrl("login?logout")
+          //.logoutSuccessUrl("login?logout")
           .deleteCookies("JSESSIONID")
           .invalidateHttpSession(true)
           .clearAuthentication(true);

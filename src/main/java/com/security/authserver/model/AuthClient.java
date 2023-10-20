@@ -119,7 +119,11 @@ public class AuthClient {
       .authorizationGrantTypes(agt -> agt.addAll(client.getAuthorizationGrandTypes()))
       .redirectUris(ru -> ru.addAll(client.getRedirectUris()))
       .scopes(s -> s.addAll(client.getScopes()))
-      .clientSettings(ClientSettings.builder().requireProofKey(client.isRequireProofKey()).build());
+      .clientSettings(
+        ClientSettings.builder()
+        .requireProofKey(client.isRequireProofKey())
+        .requireAuthorizationConsent(true)
+        .build());
     
     return builder.build();
   }

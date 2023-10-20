@@ -21,9 +21,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
@@ -31,6 +29,7 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -54,22 +53,16 @@ public class AuthorizationSecurityConfig {
 
   @Bean 
 	@Order(1)
-	public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity http)
-			throws Exception {
+	public SecurityFilterChain authSecurityFilterChain(HttpSecurity http)	throws Exception {
+		http.cors(Customizer.withDefaults());
 		OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-		http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-			.oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0		
-		http.apply(new FederatedIdentityConfigurer());				
-		http			
-			.exceptionHandling((exceptions) -> exceptions
-				.defaultAuthenticationEntryPointFor(
+		http.getConfigurer(OAuth2AuthorizationServerConfigurer.class).oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0				
+		// Accept access tokens for User Info and/or Client Registration
+		http.oauth2ResourceServer((resourceServer) -> resourceServer.jwt(Customizer.withDefaults()));
+		http.exceptionHandling((exceptions) -> exceptions.defaultAuthenticationEntryPointFor(
 					new LoginUrlAuthenticationEntryPoint("/login"),
 					new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
-				)
-			)
-			// Accept access tokens for User Info and/or Client Registration
-			.oauth2ResourceServer((resourceServer) -> resourceServer
-				.jwt(Customizer.withDefaults()));
+				)).oauth2ResourceServer((resourceServer) -> resourceServer.jwt(Customizer.withDefaults()));			
 
 		return http.build();
 	}
@@ -77,7 +70,8 @@ public class AuthorizationSecurityConfig {
   @Bean 
 	@Order(2)
 	public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
-		
+		http.cors(Customizer.withDefaults());
+		http.csrf(customizer -> customizer.ignoringRequestMatchers("/auth/**", "/oclient/**"));
 		FederatedIdentityConfigurer federatedIdentityConfigurer = new FederatedIdentityConfigurer()
 						.oauth2UserHandler(new UserRepositoryOAuth2UserHandler(googleUserDao));
 		http
@@ -87,14 +81,18 @@ public class AuthorizationSecurityConfig {
 			)
 			// Form login handles the redirect to the login page from the
 			// authorization server filter chain
-			.formLogin(Customizer.withDefaults())
+			.formLogin(login -> login.loginPage("/login"))
+			.oauth2Login(login -> login.loginPage("/login").successHandler(authenticationSuccessHandler())
+			)			
 			.apply(federatedIdentityConfigurer);
-
-		http.csrf(customizer -> customizer.ignoringRequestMatchers("/auth/**", "/oclient/**"));
+		http.logout(logout -> logout.logoutSuccessUrl("http://127.0.0.1:4200/logout"));		
 
 		return http.build();
 	}
 
+	private AuthenticationSuccessHandler authenticationSuccessHandler() {
+		return new FederatedIdentityAuthenticationSuccessHandler();
+	}
 	/*
   @Bean 
 	public UserDetailsService userDetailsService() {
@@ -158,10 +156,10 @@ public class AuthorizationSecurityConfig {
 			return new InMemoryOAuth2AuthorizationService();
 	}
 
-	@Bean
-	public OAuth2AuthorizationConsentService authorizationConsentService() {
-			return new InMemoryOAuth2AuthorizationConsentService();
-	}
+	// @Bean
+	// public OAuth2AuthorizationConsentService authorizationConsentService() {
+	// 		return new InMemoryOAuth2AuthorizationConsentService();
+	// }
 
 	@Bean
 	public AuthorizationServerSettings authorizationServerSettings(){
