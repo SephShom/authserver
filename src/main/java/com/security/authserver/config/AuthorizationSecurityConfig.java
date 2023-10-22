@@ -54,8 +54,8 @@ public class AuthorizationSecurityConfig {
   @Bean 
 	@Order(1)
 	public SecurityFilterChain authSecurityFilterChain(HttpSecurity http)	throws Exception {
-		http.cors(Customizer.withDefaults());
 		OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+		http.cors(Customizer.withDefaults());		
 		http.getConfigurer(OAuth2AuthorizationServerConfigurer.class).oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0				
 		// Accept access tokens for User Info and/or Client Registration
 		http.oauth2ResourceServer((resourceServer) -> resourceServer.jwt(Customizer.withDefaults()));
@@ -64,16 +64,17 @@ public class AuthorizationSecurityConfig {
 					new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
 				)).oauth2ResourceServer((resourceServer) -> resourceServer.jwt(Customizer.withDefaults()));			
 
+		
 		return http.build();
 	}
 
   @Bean 
 	@Order(2)
 	public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
-		http.cors(Customizer.withDefaults());
-		http.csrf(customizer -> customizer.ignoringRequestMatchers("/auth/**", "/oclient/**"));
 		FederatedIdentityConfigurer federatedIdentityConfigurer = new FederatedIdentityConfigurer()
 						.oauth2UserHandler(new UserRepositoryOAuth2UserHandler(googleUserDao));
+		http.cors(Customizer.withDefaults());
+		http.csrf(customizer -> customizer.ignoringRequestMatchers("/auth/**", "/oclient/**"));		
 		http
 			.authorizeHttpRequests((authorize) -> authorize
 				.requestMatchers("/auth/**", "/oclient/**", "/login").permitAll()
